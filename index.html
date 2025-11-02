@@ -164,6 +164,8 @@
         };
         // [v6.14] 리사이즈 이벤트에 연결
         window.addEventListener('resize', setDocHeight);
+        // [v6.16] DOM 로드와 관계없이 스크립트 실행 시 즉시 호출
+        setDocHeight();
         
         // --- [v5.0] 페로 스프라이트 DB ---
         const pherroSprites = {
@@ -210,6 +212,8 @@
         const homescreen = document.getElementById('homescreen');
         const pherroView = document.getElementById('pherro-view');
         let isFirstVisit = true;
+        // [v6.15] 현재 앱의 ID를 저장할 스택
+        const appStack = []; 
 
         function changePherroSprite(emotion) {
             const imageUrl = pherroSprites[emotion] || pherroSprites['default'];
@@ -228,6 +232,18 @@
         }
 
         function openApp(appElement, reactionKey) {
+            // [v6.15] 앱을 열 때 히스토리 상태 기록 및 스택에 추가
+            const appID = appElement.id;
+            
+            // 현재 화면이 홈스크린이 아니라면, 현재 상태를 스택에 기록
+            if (appID !== 'homescreen' && homescreen.style.display !== 'grid') {
+                appStack.push(appID);
+                history.pushState({ app: appID }, '', `#${appID}`);
+            } else if (appID !== 'homescreen') {
+                appStack.push(appID);
+                history.pushState({ app: appID }, '', `#${appID}`);
+            }
+
             homescreen.style.display = 'none';
             appElement.style.display = 'flex';
             if (reactionKey) { 
@@ -236,17 +252,61 @@
         }
 
         function closeApp(appElement) {
+            // [v6.15] 앱을 닫을 때 스택에서 제거 (하드웨어 뒤로가기는 popstate에서 처리)
             appElement.style.display = 'none';
-            homescreen.style.display = 'grid';
+
+            // [v6.15] 홈스크린으로 돌아갈 때만 grid로 설정
+            if (appElement.id === 'app-memo' || appElement.id === 'app-gallery' || appElement.id === 'app-messenger' || appElement.id === 'app-start-op') {
+                 homescreen.style.display = 'grid';
+                 appStack.splice(0, appStack.length); // 홈으로 돌아가면 스택 초기화
+                 history.pushState({ app: 'homescreen' }, '', '#homescreen'); // 홈스크린 상태 기록
+            } else if (appElement.id === 'app-memo-content') {
+                 document.getElementById('app-memo').style.display = 'flex';
+                 appStack.pop();
+            } else if (appElement.id === 'app-gallery-detail') {
+                 document.getElementById('app-gallery').style.display = 'flex';
+                 appStack.pop();
+            } else if (appElement.id === 'app-messenger-chat') {
+                 document.getElementById('app-messenger').style.display = 'flex';
+                 appStack.pop();
+            }
+            
             pherroReacts('trigger_return_home'); 
         }
         
-        // --- [v6.11] 앱 로직 수정 ---
+        // --- [v6.15] 모바일 '뒤로가기' (popstate) 이벤트 처리 ---
+        window.onpopstate = function(event) {
+            // 브라우저 뒤로가기가 눌렸을 때 실행됨
+            if (appStack.length > 0) {
+                // 스택의 마지막 요소를 제거하고 (현재 닫힐 화면)
+                appStack.pop();
+                
+                // 스택에 남은 마지막 요소를 확인 (돌아가야 할 화면)
+                const targetAppId = appStack.length > 0 ? appStack[appStack.length - 1] : 'homescreen';
+                
+                // 모든 앱을 숨김
+                document.querySelectorAll('.app-screen').forEach(app => app.style.display = 'none');
+
+                if (targetAppId === 'homescreen') {
+                    homescreen.style.display = 'grid';
+                    pherroReacts('trigger_return_home');
+                } else {
+                    document.getElementById(targetAppId).style.display = 'flex';
+                    // 이 때는 반응을 건너뜀 (앱 내부에서 이미 반응을 보였을 수 있으므로)
+                }
+            } else {
+                // 스택이 비어있으면 (앱이 닫히고 홈스크린에 있을 때)
+                // 브라우저의 기본 뒤로가기 동작을 수행하여 이전 웹페이지로 돌아가도록 허용
+                // 하지만 우리는 현재 페이지가 첫 진입점이라 아무것도 안 함.
+            }
+        };
+
         
         document.addEventListener('DOMContentLoaded', () => {
-            // [v6.14] DOMContentLoaded 이후에도 높이 설정 함수 실행
-            setDocHeight();
             
+            // [v6.15] 초기 진입 시 homescreen 상태 기록
+            history.replaceState({ app: 'homescreen' }, '', '#homescreen');
+
             // --- [v6.2] 버그 수정된 클릭 로직 유지 ---
 
             // --- 1. 메모장 앱 로직 (v6.9와 동일) ---
@@ -266,17 +326,19 @@
                 e.stopPropagation(); 
                 openApp(appMemo, 'trigger_memo_open');
             });
-            closeMemo.addEventListener('click', () => closeApp(appMemo));
+            closeMemo.addEventListener('click', () => {
+                closeApp(appMemo);
+                history.back(); // [v6.15] history.back() 호출로 onpopstate를 트리거
+            });
 
             closeMemoContent.addEventListener('click', () => {
-                appMemoContent.style.display = 'none';
-                appMemo.style.display = 'flex';
-                pherroReacts('trigger_memo_open'); 
+                // closeApp(appMemoContent); // [v6.15] 직접 닫지 않고 history.back() 호출
+                history.back();
             });
 
             memoItemFailure.addEventListener('click', () => {
                 appMemo.style.display = 'none';
-                appMemoContent.style.display = 'flex';
+                openApp(appMemoContent, 'trigger_failure'); // [v6.15] openApp 사용
                 memoContentTitle.innerText = "실패_보고서.txt";
                 memoContentBody.innerHTML = `
                     <p><b>작전명:</b> 초강력 강아지 돌격 작전</p>
@@ -284,12 +346,11 @@
                     <p><b>사유:</b> 괴도 미라쥬가... 너무 빨랐음.</p>
                     <p>...</p><p>...</p><p>...</p>
                     <p>정말 왜 안지워지는 거지?</p>`;
-                pherroReacts('trigger_failure');
             });
 
             memoItemMystery.addEventListener('click', () => {
                 appMemo.style.display = 'none';
-                appMemoContent.style.display = 'flex';
+                openApp(appMemoContent, 'trigger_mystery_file');
                 memoContentTitle.innerText = "3대_미스터리.txt";
                 memoContentBody.innerHTML = `
                     <p><b>[경찰서 3대 미스터리]</b></p><br>
@@ -297,12 +358,11 @@
                     <p>2. 7층의 금고</p>
                     <p>3. 코넬 형사</p><br>
                     <p>...더 읽으려고?</p>`;
-                pherroReacts('trigger_mystery_file');
             });
 
             memoItemVault.addEventListener('click', () => {
                 appMemo.style.display = 'none';
-                appMemoContent.style.display = 'flex';
+                openApp(appMemoContent, 'trigger_vault_note');
                 memoContentTitle.innerText = "7층_금고_비번(추정).txt";
                 memoContentBody.innerHTML = `
                     <p><b>[절대 까먹지 말 것!]</b></p><br>
@@ -312,12 +372,11 @@
                     <p>4. 내 생일 (아님)</p>
                     <p>5. DogBiscuit (아님!!)</p><br>
                     <p>...대체 뭐야?!?</p>`;
-                pherroReacts('trigger_vault_note');
             });
 
             memoItemDiary.addEventListener('click', () => {
                 appMemo.style.display = 'none';
-                appMemoContent.style.display = 'flex';
+                openApp(appMemoContent, 'trigger_diary');
                 memoContentTitle.innerText = "비밀 일기장 (잠금)";
                 memoContentBody.innerHTML = `
                     <p><b>[X월 X일]</b></p><br>
@@ -326,7 +385,6 @@
                     <p>이상하게 그 녀석이 옆에 있으면, 조금... 아주 조금은 든든한 것 같기도 하고.</p>
                     <p>...칫! 내가 왜 이런 생각을 하는 거야!</p>
                     <p>(...고맙다고는, 절대 말 안 해줄 거지만.)</p>`;
-                pherroReacts('trigger_diary');
             });
 
             // --- 2. 갤러리 앱 로직 (v6.7과 동일) ---
@@ -351,17 +409,18 @@
                 e.stopPropagation(); 
                 openApp(appGallery, 'trigger_gallery_open');
             });
-            closeGallery.addEventListener('click', () => closeApp(appGallery));
+            closeGallery.addEventListener('click', () => {
+                closeApp(appGallery);
+                history.back(); // [v6.15] history.back() 호출로 onpopstate를 트리거
+            });
 
             closeGalleryDetail.addEventListener('click', () => {
-                appGalleryDetail.style.display = 'none';
-                appGallery.style.display = 'flex';
-                pherroReacts('trigger_gallery_open');
+                history.back();
             });
 
             galleryItemOnsen.addEventListener('click', () => {
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_onsen');
                 galleryDetailTitle.innerText = "Zzz...";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/4ebb1d35-3d23-4847-88ca-da4cea8dbe7c.jpeg" alt="온천 사진">
@@ -370,12 +429,11 @@
                         이게 언제 찍혔지? 분명히 온천에선 아무도...<br>
                         ...잠깐, 그럼 이걸 네가?!
                     </div>`;
-                pherroReacts('trigger_gallery_onsen');
             });
 
             galleryItemMirage.addEventListener('click', () => {
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_mirage');
                 galleryDetailTitle.innerText = "미라쥬 도주 사진";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/06928558-39bf-4f97-82dc-ef253251946f.png" alt="미라쥬 도주">
@@ -384,12 +442,11 @@
                         이때... 분명히 다 잡았는데!<br>
                         저 괴냥이, 다음엔 꼭 잡는다! (증거자료 1)
                     </div>`;
-                pherroReacts('trigger_gallery_mirage');
             });
             
             galleryItemAcademyShy.addEventListener('click', () => { // [v6.11] 메모 수정
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_academy_shy');
                 galleryDetailTitle.innerText = "아카데미 시절";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/70b6d548-c512-4130-bdb6-a702740f1668.png" alt="아카데미 소심">
@@ -398,12 +455,11 @@
                         ...이런 시절 없었어! 없었다고!<br>
                         (이 사진... 부끄러우니까 숨겨놔야지.)
                     </div>`;
-                pherroReacts('trigger_gallery_academy_shy');
             });
 
             galleryItemAcademyConfident.addEventListener('click', () => {
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_academy_confident');
                 galleryDetailTitle.innerText = "대장 위엄샷"; 
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png" alt="아카데미 당당">
@@ -412,12 +468,11 @@
                         흠! 역시 난 멋져!<br>
                         대장의 풍모가 느껴지지 않아?!
                     </div>`;
-                pherroReacts('trigger_gallery_academy_confident');
             });
             
             galleryItemFennec.addEventListener('click', () => { // [v6.11] 메모 동일
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_fennec');
                 galleryDetailTitle.innerText = "학생회장 페넥";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/e61c85ae-b502-40bc-b2c6-45858eeef0db.png" alt="페넥">
@@ -426,12 +481,11 @@
                         아, 페넥 학생회장! 정말 멋있었지...<br>
                         저렇게 조그만데도 항상 날 잘 챙겨줬어. (동경...)
                     </div>`;
-                pherroReacts('trigger_gallery_fennec');
             });
             
             galleryItemSexy.addEventListener('click', () => {
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_sexy');
                 galleryDetailTitle.innerText = "비밀♥";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/30a93d41-851b-411c-967f-a68075a5e7a1.jpeg" alt="섹시">
@@ -439,12 +493,11 @@
                         <strong>페로의 메모:</strong>
                         (메모 없음)
                     </div>`;
-                pherroReacts('trigger_gallery_sexy');
             });
 
             galleryItemLapinFishing.addEventListener('click', () => { 
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_lapin_fishing');
                 galleryDetailTitle.innerText = "라핀 낚시";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/680467da-a19c-4dff-a01d-c7b54bc52c4e.jpeg" alt="라핀 낚시">
@@ -453,12 +506,11 @@
                         이 너구리... 갑자기 이걸 나한테 왜 보낸 거지?<br>
                         분명히 일 안 하고 농땡이 피우는 중일 거야!
                     </div>`;
-                pherroReacts('trigger_gallery_lapin_fishing');
             });
 
             galleryItemMirageSelca.addEventListener('click', () => { 
                 appGallery.style.display = 'none';
-                appGalleryDetail.style.display = 'flex';
+                openApp(appGalleryDetail, 'trigger_gallery_mirage_selca');
                 galleryDetailTitle.innerText = "지워지지 않는 사진";
                 galleryDetailContent.innerHTML = `
                     <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/3fe4dfe7-544a-410e-a078-b452c68272c2.jpeg" alt="미라쥬 셀카">
@@ -467,7 +519,6 @@
                         지워도 지워도 다시 생긴다.<br>
                         대체 어떻게... 내, 내 침대에...?!?
                     </div>`;
-                pherroReacts('trigger_gallery_mirage_selca');
             });
 
             // --- 3. 메신저 앱 로직 (v6.8과 동일) ---
@@ -486,47 +537,45 @@
                 e.stopPropagation(); 
                 openApp(appMessenger, 'trigger_messenger_open');
             });
-            closeMessenger.addEventListener('click', () => closeApp(appMessenger));
+            closeMessenger.addEventListener('click', () => {
+                closeApp(appMessenger);
+                history.back();
+            });
             
             closeMessengerChat.addEventListener('click', () => {
-                appMessengerChat.style.display = 'none';
-                appMessenger.style.display = 'flex';
-                pherroReacts('trigger_messenger_open');
+                history.back();
             });
 
             messengerItemLapin.addEventListener('click', () => {
                 appMessenger.style.display = 'none';
-                appMessengerChat.style.display = 'flex';
+                openApp(appMessengerChat, 'trigger_lapin_chat');
                 messengerChatTitle.innerText = "정보원_라핀";
                 messengerChatContent.innerHTML = `
                     <div class="chat-bubble lapin"><b>라핀:</b> 그래서, 용건은?</div>
                     <div class="chat-bubble pherro"><b>페로:</b> 야! 정보 내놔! 당장!</div>
                     <div class="chat-bubble lapin"><b>라핀:</b> 귀찮아...</div>
                     <div class="chat-bubble pherro"><b>페로:</b> 이 너구리가!!</div>`;
-                pherroReacts('trigger_lapin_chat');
             });
 
             messengerItemTeam.addEventListener('click', () => {
                 appMessenger.style.display = 'none';
-                appMessengerChat.style.display = 'flex';
+                openApp(appMessengerChat, 'trigger_team_chat');
                 messengerChatTitle.innerText = "미라쥬 체포 작전반 (3)";
                 messengerChatContent.innerHTML = `
                     <div class="chat-bubble pherro"><b>페로:</b> 다들 복창해! 이번엔 무조건 잡는다!</div>
                     <div class="chat-bubble"><b>경찰 1:</b> 넵!</div>
                     <div class="chat-bubble"><b>경찰 2:</b> (읽음)</div>
                     <div class="chat-bubble pherro"><b>페로:</b> 2팀!! 대답 안 해?!?</div>`;
-                pherroReacts('trigger_team_chat');
             });
             
             messengerItemMirage.addEventListener('click', () => {
                 appMessenger.style.display = 'none';
-                appMessengerChat.style.display = 'flex';
+                openApp(appMessengerChat, 'trigger_mirage_chat');
                 messengerChatTitle.innerText = "???";
                 messengerChatContent.innerHTML = `
                     <div class="chat-bubble lapin"><b>???:</b> 안녕, 강아지 대장님?</div>
                     <div class="chat-bubble lapin"><b>???:</b> 어제 네 침대, 꽤 푹신하던데? (V)</div>
                     <div class="chat-bubble lapin"><b>???:</b> 답장 안 해? 섭섭하네~</div>`;
-                pherroReacts('trigger_mirage_chat');
             });
 
             // --- [v6.10] '작전시작' 앱 로직 추가 ---
@@ -538,7 +587,10 @@
                 e.stopPropagation();
                 openApp(appStartOp, 'trigger_start_op');
             });
-            closeStartOp.addEventListener('click', () => closeApp(appStartOp));
+            closeStartOp.addEventListener('click', () => {
+                closeApp(appStartOp);
+                history.back();
+            });
 
 
             // --- 페이지 로드 시 첫 반응 실행 ---
