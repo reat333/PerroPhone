@@ -17,11 +17,13 @@
 
 
     <style>
-        /* (CSS 스타일... v6.2와 동일) */
+        /* [v6.14] var(--vh) 사용을 위한 기본 설정 */
         *, *::before, *::after { box-sizing: border-box; }
-        body { font-family: 'Gulim', 'Dotum', sans-serif; background-color: #111; color: #eee; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        /* [v6.14] height: 100vh 대신 var(--vh) 사용 */
+        body { font-family: 'Gulim', 'Dotum', sans-serif; background-color: #111; color: #eee; display: flex; justify-content: center; align-items: center; height: 100vh; height: calc(var(--vh, 1vh) * 100); margin: 0; overflow: hidden; }
         /* [v6.12] aspect-ratio 제거 */
-        #game-wrapper { width: 100%; height: 100%; max-width: 450px; background-color: #0a0a2a; border: 2px solid #a0a0e0; border-radius: 20px; box-shadow: 0 0 20px rgba(150, 150, 255, 0.3); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        /* [v6.14] height: 100vh 대신 var(--vh) 사용 */
+        #game-wrapper { width: 100%; height: 100vh; height: calc(var(--vh, 1vh) * 100); max-width: 450px; background-color: #0a0a2a; border: 2px solid #a0a0e0; border-radius: 20px; box-shadow: 0 0 20px rgba(150, 150, 255, 0.3); position: relative; overflow: hidden; display: flex; flex-direction: column; }
         #phone-hud { width: 100%; height: 25px; background-color: #1a1a3a; border-bottom: 1px solid #3a3a5a; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #a0a0e0; flex-shrink: 0; }
         #pherro-view { aspect-ratio: 1344 / 768; width: 100%; background: #1a1a3a url('https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/5c2d38cc-5339-420c-ac05-ee6d1034312c.jpeg') no-repeat center center; background-size: contain; padding: 8px; flex-shrink: 0; border-bottom: 1px solid #3a3a5a; transition: background-image 0.3s ease-in-out; }
         #pherro-bubble-container { height: 80px; padding: 10px; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; border-bottom: 2px solid #3a3a5a; background-color: #1a1a3a; }
@@ -156,6 +158,13 @@
     </div>
 
     <script>
+        // [v6.14] 모바일 높이 문제 해결을 위한 초기화 함수
+        const setDocHeight = () => {
+            document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+        };
+        // [v6.14] 리사이즈 이벤트에 연결
+        window.addEventListener('resize', setDocHeight);
+        
         // --- [v5.0] 페로 스프라이트 DB ---
         const pherroSprites = {
             'default': 'https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/5c2d38cc-5339-420c-ac05-ee6d1034312c.jpeg', // curious
@@ -235,6 +244,8 @@
         // --- [v6.11] 앱 로직 수정 ---
         
         document.addEventListener('DOMContentLoaded', () => {
+            // [v6.14] DOMContentLoaded 이후에도 높이 설정 함수 실행
+            setDocHeight();
             
             // --- [v6.2] 버그 수정된 클릭 로직 유지 ---
 
