@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>페로의 스마트폰</title> <!-- [v6.12] 타이틀 수정 -->
+    
+    <!-- [v6.18] BFCache 강제 비활성화 -> 페이지를 항상 새로 로드하도록 설정 -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
     <!-- (프리로드 링크 ... v6.7과 동일) -->
     <!-- [v5.4] 이미지 프리로딩 --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/5c2d38cc-5339-420c-ac05-ee6d1034312c.jpeg"> <!-- curious (default) --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/1b5eefa5-d595-4ec6-83d8-95d4dda199e1.jpeg"> <!-- smile --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/3b49664e-46ec-49c1-8972-ce6e9d76ffb8.jpeg"> <!-- happy --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/c6f70f02-424a-4617-8592-b075e4cc4aa3.jpeg"> <!-- fearful --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/6bdf27e1-85e8-4950-8065-5d9119974f3e.jpeg"> <!-- angry --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/7e32d9a5-b495-473b-9483-55cf632c0694.jpeg"> <!-- serious --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/b7cced60-0c2e-4676-87d4-23ee2eaf2fab.jpeg"> <!-- shy --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/f1221102-c991-4935-a333-55b8456abd43.jpeg"> <!-- sleepy --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/383df272-35f8-454d-8c47-fcefe0f59f3e.jpeg"> <!-- embarrased --><!-- [v6.3] 새 갤러리 이미지 프리로딩 --><link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/4ebb1d35-3d23-4847-88ca-da4cea8dbe7c.jpeg">
     <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/06928558-39bf-4f97-82dc-ef253251946f.png">
     <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/70b6d548-c512-4130-bdb6-a702740f1668.png">
-    <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png">
+    <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png"> <!-- [v6.21] 프리로드 링크 수정 -->
     <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/e61c85ae-b502-40bc-b2c6-45858eeef0db.png">
     <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/30a93d41-851b-411c-967f-a68075a5e7a1.jpeg">
     <link rel="preload" as="image" href="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/680467da-a19c-4dff-a01d-c7b54bc52c4e.jpeg">
@@ -38,7 +43,8 @@
         .app-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #1a1a3a; flex-direction: column; z-index: 200; }
         .app-header { background-color: #3a3a5a; padding: 8px 15px; display: flex; align-items: center; font-size: 16px; flex-shrink: 0; }
         .app-back-button { cursor: pointer; font-weight: bold; font-size: 20px; margin-right: 15px; line-height: 1; }
-        .app-content { padding: 15px; flex-grow: 1; overflow-y: auto; }
+        /* [v6.19] 갤러리 상세 화면의 가로 스크롤 방지를 위해 overflow-x: hidden 추가 */
+        .app-content { padding: 15px; flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
         .app-content img { width: 100%; height: auto; display: block; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 5px; }
         .app-content-nopadding { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
         .app-list { list-style: none; padding: 0; margin: 0; }
@@ -58,6 +64,13 @@
         .intro-text { font-size: 16px; line-height: 1.6; color: #ddd; background-color: #2a2a4a; padding: 15px; border-radius: 5px; }
         .link-button { display: block; background-color: #a0a0e0; color: #111; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; margin-top: 30px; }
         .link-button:hover { background-color: #c0c0ff; }
+        
+        /* [v6.19] 채팅 입력창 스타일 */
+        .chat-input-area { width: 100%; padding: 10px; background-color: #2a2a4a; flex-shrink: 0; display: flex; border-top: 1px solid #5a5a7a; }
+        .chat-input { flex-grow: 1; padding: 8px; border: 1px solid #5a5a7a; border-radius: 5px; background-color: #1a1a3a; color: #eee; font-size: 14px; }
+        .chat-send-button { margin-left: 10px; padding: 8px 15px; background-color: #a0a0e0; color: #111; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .chat-send-button:disabled { background-color: #5a5a7a; color: #ccc; cursor: default; }
+        .chat-error-message { text-align: center; color: #ff5555; font-size: 12px; padding: 5px 0; }
     </style>
 </head>
 <body>
@@ -101,7 +114,7 @@
                         <div class="gallery-item" id="gallery-item-onsen"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/4ebb1d35-3d23-4847-88ca-da4cea8dbe7c.jpeg" alt="onsen"></div>
                         <div class="gallery-item" id="gallery-item-mirage"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/06928558-39bf-4f97-82dc-ef253251946f.png" alt="mirage"></div>
                         <div class="gallery-item" id="gallery-item-academy-shy"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/70b6d548-c512-4130-bdb6-a702740f1668.png" alt="academy shy"></div>
-                        <div class="gallery-item" id="gallery-item-academy-confident"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png" alt="academy confident"></div>
+                        <div class="gallery-item" id="gallery-item-academy-confident"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png" alt="academy confident"></div> <!-- [v6.21] 링크 오타 수정 완료 -->
                         <div class="gallery-item" id="gallery-item-fennec"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/e61c85ae-b502-40bc-b2c6-45858eeef0db.png" alt="fennec"></div>
                         <div class="gallery-item" id="gallery-item-sexy"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/30a93d41-851b-411c-967f-a68075a5e7a1.jpeg" alt="sexy"></div>
                         <div class="gallery-item" id="gallery-item-lapin-fishing"><img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/680467da-a19c-4dff-a01d-c7b54bc52c4e.jpeg" alt="lapin fishing"></div>
@@ -111,6 +124,7 @@
             </div>
             <div class="app-screen" id="app-gallery-detail">
                 <div class="app-header"><span class="app-back-button" id="close-gallery-detail">&lt;</span><span id="gallery-detail-title"></span></div>
+                <!-- [v6.19] 갤러리 상세 화면의 가로 스크롤 방지를 위해 overflow-x: hidden 추가 -->
                 <div class="app-content" id="gallery-detail-content">
                     <!-- JS가 여기에 img와 memo div를 생성 --></div>
             </div>
@@ -138,6 +152,11 @@
                 <div class="app-header"><span class="app-back-button" id="close-messenger-chat">&lt;</span><span id="messenger-chat-title"></span></div>
                 <div class="app-content" id="messenger-chat-content">
                     <!-- JS가 여기에 chat-bubble div들을 생성 --></div>
+                <!-- [v6.19] 메신저 입력창 (답장 불가) -->
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="답장할 수 없습니다.">
+                    <button class="chat-send-button" disabled>전송</button>
+                </div>
             </div>
 
             <!-- [v6.10] '작전시작' 앱 화면 추가 --><div class="app-screen" id="app-start-op">
@@ -292,7 +311,7 @@
                     pherroReacts('trigger_return_home');
                 } else {
                     document.getElementById(targetAppId).style.display = 'flex';
-                    // 이 때는 반응을 건너뜀 (앱 내부에서 이미 반응을 보였을 수 있으므로)
+                    // 이 때는 반응을 건너뜔 (앱 내부에서 이미 반응을 보였을 수 있으므로)
                 }
             } else {
                 // 스택이 비어있으면 (앱이 닫히고 홈스크린에 있을 때)
@@ -387,7 +406,7 @@
                     <p>(...고맙다고는, 절대 말 안 해줄 거지만.)</p>`;
             });
 
-            // --- 2. 갤러리 앱 로직 (v6.7과 동일) ---
+            // --- 2. 갤러리 앱 (v6.7과 동일) ---
             const iconGallery = document.getElementById('icon-gallery'); 
             const appGallery = document.getElementById('app-gallery');
             const closeGallery = document.getElementById('close-gallery');
@@ -460,9 +479,9 @@
             galleryItemAcademyConfident.addEventListener('click', () => {
                 appGallery.style.display = 'none';
                 openApp(appGalleryDetail, 'trigger_gallery_academy_confident');
-                galleryDetailTitle.innerText = "대장 위엄샷"; 
+                galleryDetailTitle.innerText = "대장의 위엄"; 
                 galleryDetailContent.innerHTML = `
-                    <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png" alt="아카데미 당당">
+                    <img src="https://d394jeh9729epj.cloudfront.net/8EgrdR7PfMI-KKKOVUNQUVI5/23bc73e5-8b23-4acf-b7b5-be0be8784c57.png" alt="아카데미 당당"> <!-- [v6.21] 링크 오타 수정 완료 -->
                     <div class="image-memo">
                         <strong>페로의 메모:</strong>
                         흠! 역시 난 멋져!<br>
@@ -521,7 +540,7 @@
                     </div>`;
             });
 
-            // --- 3. 메신저 앱 로직 (v6.8과 동일) ---
+            // --- 3. 메신저 앱 (v6.8과 동일) ---
             const iconMessenger = document.getElementById('icon-messenger'); 
             const appMessenger = document.getElementById('app-messenger');
             const closeMessenger = document.getElementById('close-messenger');
@@ -593,11 +612,15 @@
             });
 
 
-            // --- 페이지 로드 시 첫 반응 실행 ---
+            // --- [v6.17] BFCache 문제 해결: pageshow 이벤트 제거 ---
+            // window.addEventListener('pageshow', (event) => { /* ... */ });
+            
+            // --- DOMContentLoaded 로직 (기존의 최초 실행 로직은 pageshow로 이동됨) ---
             if (isFirstVisit) {
                 pherroReacts('trigger_first_visit');
                 isFirstVisit = false;
             }
+
         });
 
     </script>
